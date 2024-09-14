@@ -4,6 +4,7 @@ const express = require('express');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
+const port = process.env.PORT || 3000;
 
 const startScene = new Scenes.BaseScene('start');
 const speakingScene = new Scenes.BaseScene('speaking');
@@ -195,7 +196,12 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage) {
     throw error;
   }
 }
-app.listen(80, () => {
-  console.log('Server started on port', 80);
+
+bot.catch((err) => {
+  console.error('Error:', err);
+})
+
+app.listen(port, () => {
+  console.log('Server started on port', port);
   bot.launch()
 })
