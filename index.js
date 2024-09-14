@@ -175,6 +175,8 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
     try {
       await ctx.telegram.editMessageText(ctx.chat.id, ctx.session.previousMessageId, null, newText, options);
     } catch (error) {
+      const message = await ctx.reply(newText, options);
+      ctx.session.previousMessageId = message.message_id;
       console.error('Error editing message:', error);
     }
   } else {
