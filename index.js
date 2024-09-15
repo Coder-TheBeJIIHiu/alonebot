@@ -165,11 +165,10 @@ bot.start(async (ctx) => {
   }
 });
 
-// Enable graceful stop
+// та чтоб этат ваш бот нармальма загрузился хаахах, короче чтобы всё хорошо выключился без ошибок
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
-// Function to send or edit previous message
 async function sendOrEditMessage(ctx, newText, options = {}) {
   if (ctx.session.previousMessageId) {
     try {
@@ -185,7 +184,6 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
   }
 }
 
-// Function to send message to channel and return link
 async function sendMessageAndGetLink(CHANNEL_ID, userMessage) {
   try {
     const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="tg://user?id=${bot.botInfo.id}">${bot.botInfo.first_name}</a>`, {
