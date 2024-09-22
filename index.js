@@ -195,16 +195,18 @@ bot.use(session());
 bot.use(stage.middleware());
 bot.on("text", async (ctx, next) => {
   const chatId = ctx.chat.id;
-  console.log(ctx)
+  const oldctx = ctx;
+  ctx.deleteMessage(oldctx.message.message_id)
+  ctx.reply(oldctx.message.text)
   if (chatId === -1002187980979) {
-     if(ctx.message.message_thread_id) {
-       const thid = ctx.message.message_thread_id
-       const user = await User.findOne({ telegram_id: ctx.from.id });
+     if(oldctx.message.reply_to_message.message_id) {
+       const thid = oldctx.message.reply_to_message.message_id
+       const user = await User.findOne({ telegram_id: oldctx.from.id });
        const message = await Message.findOne({ id: thid });
        if(!message) return
        if(user.uuid === message.ownuuid) return;
        const thown = await User.findOne({ uuid: message.ownuuid });
-       ctx.telegram.sendMessage(thown.telegram_id, "Вам ответили:\n" + ctx.message.text, Markup.inlineKeyboard([
+       ctx.telegram.sendMessage(thown.telegram_id, "Вам ответили:\n" + oldctx.message.text, Markup.inlineKeyboard([
          Markup.button.url('📖 Ответить', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}/`)
        ]))
      }
