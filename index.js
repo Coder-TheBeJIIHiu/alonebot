@@ -74,8 +74,8 @@ broadcastScene.on('text', async (ctx) => {
 broadcastScene.action('confirm', async (ctx) => {
   const messageText = ctx.scene.state.messageText;
   const users = await User.find();
-  const usersPerBatch = 15;
   const totalUsers = users.length;
+  const usersPerBatch = Math.ceil(totalUsers / 15);
   let successCount = 0;
   let failCount = 0;
   let failedUsers = [];
@@ -127,7 +127,7 @@ broadcastScene.action('confirm', async (ctx) => {
 
     if (failedUsers.length > 0) {
       reportMessage += `\n\n⚠️ *Не удалось отправить сообщения следующим пользователям:* \n` +
-        failedUsers.map(id => `🔸 @${id}`).join('\n');
+        failedUsers.map(id => `🔸 <a href="tg://user?id=${id}">${id}</a>`).join('\n');
     }
 
     ctx.reply(reportMessage, { parse_mode: 'Markdown' });
