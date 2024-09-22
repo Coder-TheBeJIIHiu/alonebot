@@ -198,6 +198,7 @@ speakingScene.on('text', async (ctx) => {
 });
 
 speakingScene.action('yes', async (ctx) => {
+  await ctx.deleteMessage()
   const link = await sendMessageAndGetLink(CHANNEL_ID, ctx.session.usrmsg, ctx.from.id);
   ctx.session.payload = link.uuid;
   await ctx.scene.enter('msg');
@@ -278,7 +279,7 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
   const user = await User.findOne({ telegram_id: uid });
   const msg = new Message({ uuid: uuidv4(), ownuuid: user.uuid, message: userMessage })
     
-  const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.username}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, { parse_mode: 'HTML' });
+  const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.username}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }});
   msg.id = message.message_id;
   await msg.save();
   return msg;
