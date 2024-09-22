@@ -193,7 +193,7 @@ speakingScene.action('cancel', async (ctx) => {
 
 bot.use(session());
 bot.use(stage.middleware());
-bot.use(async (ctx, next) => {
+bot.on("text", async (ctx, next) => {
   const chatId = ctx.chat.id;
   ctx.reply(JSON.stringify(ctx))
   if (chatId === -1002187980979) {
@@ -209,7 +209,7 @@ bot.use(async (ctx, next) => {
        ]))
      }
   }
-  next();
+  next()
 })
 
 
