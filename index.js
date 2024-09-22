@@ -276,7 +276,8 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
 
 async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
   const user = await User.findOne({ telegram_id: uid });
-  const msg = new Message({ uuid: uuidv4(), ownuuid: user.uuid, message: userMessage }).save();
+  const msg = new Message({ uuid: uuidv4(), ownuuid: user.uuid, message: userMessage })
+    
   const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.username}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, { parse_mode: 'HTML' });
   msg.id = message.message_id;
   await msg.save();
