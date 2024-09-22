@@ -200,14 +200,14 @@ bot.on("text", async (ctx, next) => {
   if (chatId === -1002187980979) {
     // ctx.deleteMessage(oldctx.message.message_id)
     // ctx.reply(oldctx.message.text)
-    if(oldctx.message.reply_to_message) {
-       const thid = oldctx.message.reply_to_message.message_id
-       const user = await User.findOne({ telegram_id: oldctx.from.id });
+    if(ctx.message.reply_to_message) {
+       const thid = ctx.message.reply_to_message.message_id
+       const user = await User.findOne({ telegram_id: ctx.from.id });
        const message = await Message.findOne({ id: thid });
        if(!message) return
        if(user.uuid === message.ownuuid) return;
        const thown = await User.findOne({ uuid: message.ownuuid });
-       ctx.telegram.sendMessage(thown.telegram_id, "Вам ответили:\n" + oldctx.message.text, Markup.inlineKeyboard([
+       ctx.telegram.sendMessage(thown.telegram_id, "Вам ответили:\n" + ctx.message.text, Markup.inlineKeyboard([
          Markup.button.url('📖 Ответить', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}/`)
        ]))
      }
@@ -220,7 +220,7 @@ bot.start(async (ctx) => {
   const ref = ctx.startPayload
   const userId = ctx.from.id;
   var newUsr = false;
-  const user = await User.findOne({ telegram_id: userId }); 
+  var user = await User.findOne({ telegram_id: userId }); 
   if (!user) {
     var newUser = new User({
       telegram_id: userId
