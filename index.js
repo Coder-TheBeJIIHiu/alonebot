@@ -172,7 +172,7 @@ speakingScene.action('yes', async (ctx) => {
     const link = await sendMessageAndGetLink(CHANNEL_ID, ctx.session.usrmsg, ctx.from.id);
     ctx.session.ref = link.uuid;
     ctx.session.previousMessageId = null;
-    await ctx.scene.enter("start");
+    await ctx.scene.enter("msg");
   } catch (error) {
     await ctx.reply('Произошла ошибка при отправке сообщения. Попробуйте ещё раз позже.');
   }
@@ -249,7 +249,7 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
     const user = await User.findOne({ telegram_id: uid });
 
     const msg = await Message({
-      uuid: uuidv4,
+      uuid: uuidv4(),
       ownuuid: user.uuid,
       message: userMessage
     })
