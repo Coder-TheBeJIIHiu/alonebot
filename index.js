@@ -11,7 +11,14 @@ const app = express();
 const CHANNEL_ID = '@alone_speakchnl';
 const port = process.env.PORT || 3000;
 
-mongoose.connect(process.env.MONGO_URI).then(() => console.log('Connected to MongoDB'));
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);mongoose.connect(process.env.MONGO_URI).then(() => {
+    console.log('Connected to MongoDB');
+    bot.launch();
+    console.log(`Bot Running...`);
+  })
+});
+
 
 const startScene = new Scenes.BaseScene('start');
 const speakingScene = new Scenes.BaseScene('speaking');
@@ -75,7 +82,7 @@ broadcastScene.action('confirm', async (ctx) => {
   const messageText = ctx.scene.state.messageText;
   const users = await User.find();
   const totalUsers = users.length;
-  const usersPerBatch = Math.ceil(totalUsers / 15);
+  const usersPerBatch = 20
   let successCount = 0;
   let failCount = 0;
   let failedUsers = [];
@@ -93,7 +100,7 @@ broadcastScene.action('confirm', async (ctx) => {
     }
   };
 
-  const totalBatches = Math.ceil(totalUsers / usersPerBatch);
+  const totalBatches = 2 // Math.ceil(totalUsers / usersPerBatch);
 
   ctx.reply(
     `📢 *Начинаем рассылку сообщений*\n\n` +
@@ -121,16 +128,16 @@ broadcastScene.action('confirm', async (ctx) => {
   }
 
   setTimeout(() => {
-    let reportMessage = `📬 *Рассылка завершена!*\n\n` +
-      `✅ Успешно отправлено сообщений: *${successCount}/${totalUsers}*\n` +
-      `❌ Ошибок при отправке: *${failCount}*`;
+    let reportMessage = `📬 <b>Рассылка завершена!</b>\n\n` +
+      `✅ Успешно отправлено сообщений: <b>${successCount}/${totalUsers}</b>\n` +
+      `❌ Ошибок при отправке: <b>${failCount}</b>`;
 
     if (failedUsers.length > 0) {
-      reportMessage += `\n\n⚠️ *Не удалось отправить сообщения следующим пользователям:* \n` +
+      reportMessage += `\n\n⚠️ <b>Не удалось отправить сообщения следующим пользователям:</b>\n` +
         failedUsers.map(id => `🔸 <a href="tg://user?id=${id}">${id}</a>`).join('\n');
     }
 
-    ctx.reply(reportMessage, { parse_mode: 'Markdown' });
+    ctx.reply(reportMessage, { parse_mode: 'HTML' });
   }, totalBatches * 60000 + 5000);
 
   ctx.scene.leave();
@@ -275,11 +282,6 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
   await msg.save();
   return msg;
 }
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  bot.launch();
-});
 
 async function shortenUrl(longUrl) {
   try {
