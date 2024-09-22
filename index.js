@@ -219,13 +219,13 @@ bot.on("text", async (ctx, next) => {
 bot.start(async (ctx) => {
   const ref = ctx.startPayload
   const userId = ctx.from.id;
-  let newUsr = false;
+  var newUsr = false;
   const user = await User.findOne({ telegram_id: userId }); 
   if (!user) {
-    const newUser = new User({
+    var newUser = new User({
       telegram_id: userId
     })
-    let newUsr = true;
+    newUsr = true;
     await newUser.save()
     user = newUser;
   }
