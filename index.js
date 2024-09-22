@@ -1,13 +1,25 @@
 const { Telegraf, Markup, Scenes, session } = require('telegraf');
 const fs = require('fs');
 const express = require('express');
+const mongoose = require('mongoose');
+const axios = require('axios');
+
+const Message = require('./models/Message');
+const User = require('./models/User');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
+
+mongoose.connect(process.env.MONGO_URI).then(() => {
+  console.log('Connected to MongoDB');
+})
+
 const port = process.env.PORT || 3000;
 
 const startScene = new Scenes.BaseScene('start');
 const speakingScene = new Scenes.BaseScene('speaking');
+const msgScene = new Scenes.BaseScene('msg');
+
 const CHANNEL_ID = '@alone_speakchnl';
 const stage = new Scenes.Stage([startScene, speakingScene]);
 
@@ -95,6 +107,31 @@ speakingScene.action('back', async (ctx) => {
     console.error('Error returning to start:', error);
   }
 });
+msgScene.action('back', async (ctx) => {
+  await ctx.answerCbQuery();
+  try {
+    ctx.scene.enter('start');
+  } catch (error) {
+    console.error('Error returning to start:', error);
+  }
+})
+
+msgScene.enter(async (ctx) => {
+  const ref = ctx.session.ref;
+  const message = Message.findOne({ uuid: ref });
+  const userMessage = message.message;
+  if (userMessage.length > 30) {
+    userMessage = userMessage.slice(0, 30) + '...';
+  }
+  const encodedText = encodeURIComponent(userMessage);
+  const uri = await shortenUrl(`https://t.me/${bot.botInfo.id}?start=${ref}`)
+  ctx.reply(`Сообщение:\n<code>${userMessage}</code>\n\nВыберите действие:`, Markup.inlineKeyboard([
+    Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
+    Markup.button.callback('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}`),
+    Markup.button.callback('🔙 Назад', 'back')
+  ]), { parse_mode: 'HTML' })
+  
+})
 
 speakingScene.enter(async (ctx) => {
   try {
@@ -131,11 +168,8 @@ speakingScene.action('yes', async (ctx) => {
   await ctx.answerCbQuery();
   try {
     ctx.deleteMessage();
-    const link = await sendMessageAndGetLink(CHANNEL_ID, ctx.session.usrmsg);
-    const messageText = `Успешно! ✅\n\nСсылка на сообщение: <a href="${link}">ᴄʟɪᴄᴋ</a>.`;
-    await ctx.reply(messageText, {
-      parse_mode: 'HTML',
-    });
+    const link = await sendMessageAndGetLink(CHANNEL_ID, ctx.session.usrmsg, ctx.from.id);
+    ctx.session.ref = link.uuid;
     ctx.session.previousMessageId = null;
     await ctx.scene.enter("start");
   } catch (error) {
@@ -158,7 +192,30 @@ bot.use(session());
 bot.use(stage.middleware());
 
 bot.start(async (ctx) => {
+  const ref = ctx.startPayload
+  const userId = ctx.from.id;
   try {
+    if(ref) {
+      const user = await User.findOne({ telegram_id: userId });
+      ctx.session.payload = ctx.session.payload || "";
+      ctx.session.payload = ref;
+    
+      if (!user) {
+        const user = new User({
+          telegram_id: userId
+        })
+
+        user.save().then(async (user) => {
+          const userM = await Message.findOne({ uuid: ref });
+          userM.joins += 1;
+        
+          const ownuser = await User.findOne({ uuid: userM.ownuuid });
+          ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
+          userM.save()
+        })
+      }
+      return ctx.scene.enter('msg');
+    }
     ctx.scene.enter('start');
   } catch (error) {
     console.error('Error starting bot:', error);
@@ -186,14 +243,22 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
 }
 
 // Function to send message to channel and return link
-async function sendMessageAndGetLink(CHANNEL_ID, userMessage) {
+async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
   try {
-    const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="tg://user?id=${bot.botInfo.id}">${bot.botInfo.first_name}</a>`, {
+    const user = await User.findOne({ telegram_id: uid });
+    
+    const msg = await Message({
+      uuid: uuidv4,
+      ownuuid: user.uuid,
+      message: userMessage
+    })
+    
+    const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.id}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, {
       parse_mode: 'HTML'
     });
-    const messageId = message.message_id;
-    const link = `https://t.me/${CHANNEL_ID.replace('@', '')}/${messageId}`;
-    return link;
+    msg.id = message.message_id;
+    await msg.save()
+    return msg;
   } catch (error) {
     throw error;
   }
@@ -207,3 +272,12 @@ app.listen(port, () => {
   console.log('Server started on port', port);
   bot.launch()
 })
+
+async function shortenUrl(longUrl) {
+    try {
+        const response = await axios.get(`https://clck.ru/--?url=${encodeURIComponent(longUrl)}`);
+        return response.data;
+    } catch (error) {
+        return longUrl;
+    }
+}
