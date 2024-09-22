@@ -193,12 +193,13 @@ speakingScene.action('cancel', async (ctx) => {
 
 bot.use(session());
 bot.use(stage.middleware());
+
 bot.on("text", async (ctx, next) => {
   const chatId = ctx.chat.id;
   const oldctx = ctx;
   if (chatId === -1002187980979) {
-    ctx.deleteMessage(oldctx.message.message_id)
-    ctx.reply(oldctx.message.text)
+    // ctx.deleteMessage(oldctx.message.message_id)
+    // ctx.reply(oldctx.message.text)
     if(oldctx.message.reply_to_message.message_id) {
        const thid = oldctx.message.reply_to_message.message_id
        const user = await User.findOne({ telegram_id: oldctx.from.id });
