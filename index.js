@@ -21,7 +21,7 @@ const speakingScene = new Scenes.BaseScene('speaking');
 const msgScene = new Scenes.BaseScene('msg');
 
 const CHANNEL_ID = '@alone_speakchnl';
-const stage = new Scenes.Stage([startScene, speakingScene]);
+const stage = new Scenes.Stage([startScene, speakingScene, msgScene]);
 
 app.use(express.json());
 app.get('/', (req, res) => {
@@ -117,8 +117,8 @@ msgScene.action('back', async (ctx) => {
 })
 
 msgScene.enter(async (ctx) => {
-  const ref = ctx.session.ref;
-  ctx.session.ref = null;
+  const ref = ctx.session.payload;
+  ctx.session.payload = null;
   const message = Message.findOne({ uuid: ref });
   const userMessage = message.message;
   if (userMessage.length > 30) {
@@ -170,7 +170,8 @@ speakingScene.action('yes', async (ctx) => {
   try {
     ctx.deleteMessage();
     const link = await sendMessageAndGetLink(CHANNEL_ID, ctx.session.usrmsg, ctx.from.id);
-    ctx.session.ref = link.uuid;
+    ctx.session.payload = ctx.session.payload || "";
+    ctx.session.payload = link.uuid;
     ctx.session.previousMessageId = null;
     await ctx.scene.enter("msg");
   } catch (error) {
@@ -195,13 +196,13 @@ bot.use(stage.middleware());
 bot.start(async (ctx) => {
   const ref = ctx.startPayload
   const userId = ctx.from.id;
-
+  let newUsr = false;
   const user = await User.findOne({ telegram_id: userId }); 
   if (!user) {
     const newUser = new User({
       telegram_id: userId
     })
-    
+    let newUsr = true;
     await newUser.save()
     user = newUser;
   }
@@ -209,12 +210,14 @@ bot.start(async (ctx) => {
     if(ref) {
       ctx.session.payload = ctx.session.payload || "";
       ctx.session.payload = ref;
-      const userM = await Message.findOne({ uuid: ref });
-      userM.joins += 1;
+      if(newUsr) {
+        const userM = await Message.findOne({ uuid: ref });
+        userM.joins += 1;
 
-      const ownuser = await User.findOne({ uuid: userM.ownuuid });
-      ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
+        const ownuser = await User.findOne({ uuid: userM.ownuuid });
+        ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
       userM.save()
+      }
       return ctx.scene.enter('msg');
     } else {
       return ctx.scene.enter('start');
@@ -254,7 +257,7 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
       message: userMessage
     })
 
-    const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.id}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, {
+    const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.username}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, {
       parse_mode: 'HTML'
     });
     msg.id = message.message_id;
