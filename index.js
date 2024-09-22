@@ -121,7 +121,7 @@ msgScene.enter(async (ctx) => {
   const ref = ctx.session.payload;
   ctx.session.payload = null;
   const message = await Message.findOne({ uuid: ref });
-  const userMessage = message.message;
+  var userMessage = message.message;
   if (userMessage.length > 30) {
     userMessage = userMessage.slice(0, 30) + '...';
   }
