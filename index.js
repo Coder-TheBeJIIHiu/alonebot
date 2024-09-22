@@ -178,7 +178,6 @@ msgScene.enter(async (ctx) => {
   await ctx.replyWithHTML(statsMessage, Markup.inlineKeyboard([
     Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
     Markup.button.url('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${messageId}`),
-    ], [
     Markup.button.callback('😏 Кто писал?', 'author'),
     Markup.button.callback('🔙 Назад', 'back')
   ]));
