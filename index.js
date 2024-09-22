@@ -126,8 +126,8 @@ msgScene.enter(async (ctx) => {
     userMessage = userMessage.slice(0, 30) + '...';
   }
   const encodedText = encodeURIComponent(userMessage);
-  const uri = await shortenUrl(`https://t.me/${bot.botInfo.username}?start=${ref}`)
-  ctx.reply(`Сообщение:\n<code>${userMessage}</code>\n\nВыберите действие:`, Markup.inlineKeyboard([
+  const uri = await shortenUrl(`https://t.me/${bot.botInfo.username}?start=${message.uuid}`)
+  ctx.reply(`Сообщение:\n${userMessage}\n\nВыберите действие:`, Markup.inlineKeyboard([
     Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
     Markup.button.url('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}`),
     Markup.button.callback('🔙 Назад', 'back')
@@ -195,6 +195,7 @@ bot.use(session());
 bot.use(stage.middleware());
 bot.use(async (ctx, next) => {
   const chatId = ctx.chat.id;
+  console.log(ctx)
   if (chatId === -1002187980979) {
      if(ctx.message.message_thread_id) {
        const thid = ctx.message.message_thread_id
@@ -277,7 +278,10 @@ async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
     })
 
     const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.username}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, {
-      parse_mode: 'HTML'
+      parse_mode: 'HTML',
+      link_preview_options: {
+        is_disabled: true
+      }
     });
     msg.id = message.message_id;
     await msg.save()
