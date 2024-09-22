@@ -16,6 +16,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => console.log('Connected to Mon
 const startScene = new Scenes.BaseScene('start');
 const speakingScene = new Scenes.BaseScene('speaking');
 const msgScene = new Scenes.BaseScene('msg');
+const broadcaseScene = new Scenes.BaseScene('broadcase');
 
 const stage = new Scenes.Stage([startScene, speakingScene, msgScene]);
 
@@ -47,6 +48,98 @@ startScene.action(['rules', 'policy'], async (ctx) => {
 
 startScene.action('speak', (ctx) => ctx.scene.enter('speaking'));
 startScene.action('back', (ctx) => ctx.scene.enter('start'));
+
+broadcastScene.enter((ctx) => {
+  ctx.reply('✍️ Пожалуйста, введите сообщение, которое хотите отправить всем пользователям:');
+});
+
+broadcastScene.on('text', async (ctx) => {
+  const messageText = ctx.message.text;
+
+  ctx.reply(
+    `📢 *Вы хотите отправить следующее сообщение всем пользователям?*\n\n` +
+    `💌 Сообщение: "${messageText}"`,
+    {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('✅ Да', 'confirm')],
+        [Markup.button.callback('❌ Отмена', 'cancel')]
+      ])
+    }
+  );
+
+  ctx.scene.state.messageText = messageText;
+});
+
+broadcastScene.action('confirm', async (ctx) => {
+  const messageText = ctx.scene.state.messageText;
+  const users = await User.find();
+  const usersPerBatch = 15;
+  const totalUsers = users.length;
+  let successCount = 0;
+  let failCount = 0;
+  let failedUsers = [];
+  const msg = "¡¡¡ ОБЪЯВЛЕНИЕ 📣 !!!\n\n"
+  await ctx.telegram.sendMessage(CHANNEL_ID, msg + messageText, { parse_mode: 'Markdown' })
+  const sendMessages = async (batch) => {
+    for (let user of batch) {
+      try {
+        await ctx.telegram.sendMessage(user.telegram_id, `${msg}${messageText}`);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        failedUsers.push(user.telegram_id);
+      }
+    }
+  };
+
+  const totalBatches = Math.ceil(totalUsers / usersPerBatch);
+
+  ctx.reply(
+    `📢 *Начинаем рассылку сообщений*\n\n` +
+    `💌 Сообщение для отправки: "${messageText}"\n` +
+    `👥 Всего пользователей: *${totalUsers}*\n` +
+    `🔄 Рассылка будет производиться партиями по *${usersPerBatch}* сообщений в минуту.\n\n` +
+    `⌛️ Пожалуйста, подождите...`,
+    { parse_mode: 'Markdown' }
+  );
+
+  for (let i = 0; i < totalBatches; i++) {
+    const batch = users.slice(i * usersPerBatch, (i + 1) * usersPerBatch);
+
+    setTimeout(async () => {
+      await sendMessages(batch);
+
+      ctx.reply(
+        `📊 *Прогресс рассылки:*\n` +
+        `✅ Успешно отправлено: *${successCount}/${totalUsers}*\n` +
+        `❌ Ошибок при отправке: *${failCount}*\n` +
+        `🕐 Следующая партия будет отправлена через минуту...`,
+        { parse_mode: 'Markdown' }
+      );
+    }, i * 60000);
+  }
+
+  setTimeout(() => {
+    let reportMessage = `📬 *Рассылка завершена!*\n\n` +
+      `✅ Успешно отправлено сообщений: *${successCount}/${totalUsers}*\n` +
+      `❌ Ошибок при отправке: *${failCount}*`;
+
+    if (failedUsers.length > 0) {
+      reportMessage += `\n\n⚠️ *Не удалось отправить сообщения следующим пользователям:* \n` +
+        failedUsers.map(id => `🔸 @${id}`).join('\n');
+    }
+
+    ctx.reply(reportMessage, { parse_mode: 'Markdown' });
+  }, totalBatches * 60000 + 5000);
+
+  ctx.scene.leave();
+});
+
+broadcastScene.action('cancel', (ctx) => {
+  ctx.reply('❌ Рассылка отменена.');
+  ctx.scene.enter("start");
+});
 
 msgScene.enter(async (ctx) => {
   const ref = ctx.session.payload;
@@ -143,7 +236,7 @@ bot.command('stats', async (ctx) => {
     await ctx.reply('Произошла ошибка при получении статистики.');
   }
 });
-
+bot.command('broadcast', (ctx) => ctx.scene.enter('broadcast'))
 bot.start(async (ctx) => {
   const ref = ctx.startPayload;
   const userId = ctx.from.id;
