@@ -118,6 +118,7 @@ msgScene.action('back', async (ctx) => {
 
 msgScene.enter(async (ctx) => {
   const ref = ctx.session.ref;
+  ctx.session.ref = null;
   const message = Message.findOne({ uuid: ref });
   const userMessage = message.message;
   if (userMessage.length > 30) {
@@ -194,29 +195,30 @@ bot.use(stage.middleware());
 bot.start(async (ctx) => {
   const ref = ctx.startPayload
   const userId = ctx.from.id;
+
+  const user = await User.findOne({ telegram_id: userId }); 
+  if (!user) {
+    const newUser = new User({
+      telegram_id: userId
+    })
+    
+    await newUser.save()
+    user = newUser;
+  }
   try {
     if(ref) {
-      const user = await User.findOne({ telegram_id: userId });
       ctx.session.payload = ctx.session.payload || "";
       ctx.session.payload = ref;
+      const userM = await Message.findOne({ uuid: ref });
+      userM.joins += 1;
 
-      if (!user) {
-        const user = new User({
-          telegram_id: userId
-        })
-
-        user.save().then(async (user) => {
-          const userM = await Message.findOne({ uuid: ref });
-          userM.joins += 1;
-
-          const ownuser = await User.findOne({ uuid: userM.ownuuid });
-          ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
-          userM.save()
-        })
-      }
+      const ownuser = await User.findOne({ uuid: userM.ownuuid });
+      ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
+      userM.save()
       return ctx.scene.enter('msg');
+    } else {
+      return ctx.scene.enter('start');
     }
-    ctx.scene.enter('start');
   } catch (error) {
     console.error('Error starting bot:', error);
   }
@@ -234,7 +236,6 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
     } catch (error) {
       const message = await ctx.reply(newText, options);
       ctx.session.previousMessageId = message.message_id;
-      console.error('Error editing message:', error);
     }
   } else {
     const message = await ctx.reply(newText, options);
