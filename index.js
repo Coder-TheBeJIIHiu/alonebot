@@ -247,7 +247,7 @@ bot.start(async (ctx) => {
     const message = await Message.findOne({ uuid: ref });
     if (message) {
       const owner = await User.findOne({ uuid: message.ownuuid });
-      await bot.telegram.sendMessage(owner.telegram_id, `Пользователь присоединился по вашей ссылке.`);
+      if(owner.telegram_id !== userId) await bot.telegram.sendMessage(owner.telegram_id, `Пользователь присоединился по вашей ссылке.`);
     }
     await ctx.scene.enter('msg');
   } else {
