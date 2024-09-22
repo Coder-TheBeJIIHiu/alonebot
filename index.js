@@ -150,8 +150,8 @@ broadcastScene.action('cancel', (ctx) => {
 
 msgScene.enter(async (ctx) => {
   const ref = ctx.session.payload;
-  ctx.state.ref = ctx.state.ref || ""; 
-  ctx.state.ref = ref;
+  ctx.session.ref = ctx.session.ref || ""; 
+  ctx.session.ref = ref;
   ctx.session.payload = null;
   const message = await Message.findOne({ uuid: ref });
   let userMessage = message.message;
@@ -178,6 +178,7 @@ msgScene.enter(async (ctx) => {
   await ctx.replyWithHTML(statsMessage, Markup.inlineKeyboard([
     Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
     Markup.button.url('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${messageId}`),
+    ], [
     Markup.button.callback('😏 Кто писал?', 'author'),
     Markup.button.callback('🔙 Назад', 'back')
   ]));
@@ -189,7 +190,7 @@ msgScene.action('author', async (ctx) => {
     return ctx.scene.enter('start');
   }
 
-  const message = await Message.findOne({ uuid: ctx.state.ref });
+  const message = await Message.findOne({ uuid: ctx.session.ref });
   const authorId = message.ownuuid;
   const author = await User.findOne({ uuid: authorId });
 
@@ -198,6 +199,7 @@ msgScene.action('author', async (ctx) => {
   } else {
     await ctx.reply('Автор не найден.');
   }
+  ctx.session.ref = null;
   ctx.scene.enter("start")
 });
 
