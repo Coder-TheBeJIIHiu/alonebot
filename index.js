@@ -184,7 +184,7 @@ msgScene.enter(async (ctx) => {
 speakingScene.enter(async (ctx) => {
   const messageText = loadFile('work.txt');
   if (messageText) {
-    await sendOrEditMessage(ctx, messageText, Markup.inlineKeyboard([Markup.button.callback('🔙 Назад', 'back')]));
+    await sendOrEditMessage(ctx, messageText, Markup.inlineKeyboard([Markup.button.callback('🔙 Назад', 'cancel')]));
   }
 });
 
@@ -204,7 +204,9 @@ speakingScene.action('yes', async (ctx) => {
   await ctx.scene.enter('msg');
 });
 
-speakingScene.action('cancel', (ctx) => ctx.scene.enter('start'));
+speakingScene.action('cancel', (ctx) => {
+  ctx.scene.enter('start'));
+}
 
 bot.use(session());
 bot.use(stage.middleware());
