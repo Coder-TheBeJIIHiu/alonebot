@@ -195,7 +195,7 @@ bot.use(session());
 bot.use(stage.middleware());
 bot.on("text", async (ctx, next) => {
   const chatId = ctx.chat.id;
-  ctx.reply(JSON.stringify(ctx))
+  console.log(ctx)
   if (chatId === -1002187980979) {
      if(ctx.message.message_thread_id) {
        const thid = ctx.message.message_thread_id
