@@ -130,7 +130,7 @@ msgScene.enter(async (ctx) => {
     Markup.button.callback('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}`),
     Markup.button.callback('🔙 Назад', 'back')
   ]), { parse_mode: 'HTML' })
-  
+
 })
 
 speakingScene.enter(async (ctx) => {
@@ -199,7 +199,7 @@ bot.start(async (ctx) => {
       const user = await User.findOne({ telegram_id: userId });
       ctx.session.payload = ctx.session.payload || "";
       ctx.session.payload = ref;
-    
+
       if (!user) {
         const user = new User({
           telegram_id: userId
@@ -208,7 +208,7 @@ bot.start(async (ctx) => {
         user.save().then(async (user) => {
           const userM = await Message.findOne({ uuid: ref });
           userM.joins += 1;
-        
+
           const ownuser = await User.findOne({ uuid: userM.ownuuid });
           ctx.telegram.sendMessage(ownuser.telegram_id, `Пользователь ??? присоединился по вашей ссылке, но «Он» не знает кто Вы.`)
           userM.save()
@@ -246,13 +246,13 @@ async function sendOrEditMessage(ctx, newText, options = {}) {
 async function sendMessageAndGetLink(CHANNEL_ID, userMessage, uid) {
   try {
     const user = await User.findOne({ telegram_id: uid });
-    
+
     const msg = await Message({
       uuid: uuidv4,
       ownuuid: user.uuid,
       message: userMessage
     })
-    
+
     const message = await bot.telegram.sendMessage(CHANNEL_ID, `${userMessage}\n\n🥀 • <a href="https://t.me/${bot.botInfo.id}?start=${msg.uuid}">${bot.botInfo.first_name}</a>`, {
       parse_mode: 'HTML'
     });
