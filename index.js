@@ -150,8 +150,9 @@ broadcastScene.action('cancel', (ctx) => {
 
 msgScene.enter(async (ctx) => {
   const ref = ctx.session.payload;
+  ctx.state.ref = ctx.state.ref || ""; 
+  ctx.state.ref = ref;
   ctx.session.payload = null;
-
   const message = await Message.findOne({ uuid: ref });
   let userMessage = message.message;
 
@@ -177,8 +178,27 @@ msgScene.enter(async (ctx) => {
   await ctx.replyWithHTML(statsMessage, Markup.inlineKeyboard([
     Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
     Markup.button.url('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${messageId}`),
+    Markup.button.callback('😏 Кто писал?', 'author'),
     Markup.button.callback('🔙 Назад', 'back')
   ]));
+});
+
+msgScene.action('author', async (ctx) => {
+  if (ctx.from.id !== 6153453766) {
+    await ctx.reply('А для чего бот? 🤔');
+    return ctx.scene.enter('start');
+  }
+
+  const message = await Message.findOne({ uuid: ctx.state.ref });
+  const authorId = message.ownuuid;
+  const author = await User.findOne({ uuid: authorId });
+
+  if (author) {
+    await ctx.reply(`Автор сообщения: <a href="tg://user?id=${author.telegram_id}">${author.telegram_id}</a>`, { parse_mode: 'HTML' });
+  } else {
+    await ctx.reply('Автор не найден.');
+  }
+  ctx.scene.enter("start")
 });
 
 speakingScene.enter(async (ctx) => {
@@ -205,7 +225,7 @@ speakingScene.action('yes', async (ctx) => {
 });
 
 speakingScene.action('cancel', (ctx) => {
-  ctx.scene.enter('start'));
+  ctx.scene.enter('start');
 }
 
 bot.use(session());
