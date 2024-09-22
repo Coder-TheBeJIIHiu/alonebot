@@ -226,7 +226,7 @@ speakingScene.action('yes', async (ctx) => {
 
 speakingScene.action('cancel', (ctx) => {
   ctx.scene.enter('start');
-}
+})
 
 bot.use(session());
 bot.use(stage.middleware());
