@@ -16,9 +16,9 @@ mongoose.connect(process.env.MONGO_URI).then(() => console.log('Connected to Mon
 const startScene = new Scenes.BaseScene('start');
 const speakingScene = new Scenes.BaseScene('speaking');
 const msgScene = new Scenes.BaseScene('msg');
-const broadcaseScene = new Scenes.BaseScene('broadcase');
+const broadcastScene = new Scenes.BaseScene('broadcast');
 
-const stage = new Scenes.Stage([startScene, speakingScene, msgScene]);
+const stage = new Scenes.Stage([startScene, speakingScene, msgScene, broadcastScene]);
 
 app.use(express.json());
 
