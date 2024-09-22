@@ -24,6 +24,7 @@ const CHANNEL_ID = '@alone_speakchnl';
 const stage = new Scenes.Stage([startScene, speakingScene, msgScene]);
 
 app.use(express.json());
+
 app.get('/', (req, res) => {
   res.json({
     status: "run",
@@ -125,10 +126,10 @@ msgScene.enter(async (ctx) => {
     userMessage = userMessage.slice(0, 30) + '...';
   }
   const encodedText = encodeURIComponent(userMessage);
-  const uri = await shortenUrl(`https://t.me/${bot.botInfo.id}?start=${ref}`)
+  const uri = await shortenUrl(`https://t.me/${bot.botInfo.username}?start=${ref}`)
   ctx.reply(`Сообщение:\n<code>${userMessage}</code>\n\nВыберите действие:`, Markup.inlineKeyboard([
     Markup.button.url('💬 Поделиться', `https://t.me/share/url?url=${uri}&text=${encodedText}`),
-    Markup.button.callback('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}`),
+    Markup.button.url('📖 Открыть', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}`),
     Markup.button.callback('🔙 Назад', 'back')
   ]), { parse_mode: 'HTML' })
 
@@ -192,6 +193,24 @@ speakingScene.action('cancel', async (ctx) => {
 
 bot.use(session());
 bot.use(stage.middleware());
+bot.use(async (ctx, next) => {
+  const chatId = ctx.chat.id;
+  if (chatId === -1002187980979) {
+     if(ctx.message.message_thread_id) {
+       const thid = ctx.message.message_thread_id
+       const user = await User.findOne({ telegram_id: ctx.from.id });
+       const message = await Message.findOne({ id: thid });
+
+       if(user.uuid === message.ownuuid) return;
+       const thown = await User.findOne({ uuid: message.ownuuid });
+       ctx.telegram.sendMessage(thown.telegram_id, "Вам ответили:\n" + ctx.message.text, Markup.inlineKeyboard([
+         Markup.button.url('📖 Ответить', `https://t.me/${CHANNEL_ID.replace('@', '')}/${message.id}/`)
+       ]))
+     }
+  }
+  next();
+})
+
 
 bot.start(async (ctx) => {
   const ref = ctx.startPayload
