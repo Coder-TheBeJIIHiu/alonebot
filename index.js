@@ -67,8 +67,7 @@ broadcastScene.on('text', async (ctx) => {
     `📢 *Вы хотите отправить следующее сообщение всем пользователям?*\n\n` +
     `💌 Сообщение: "${messageText}"`,
     {
-      parse_mode: 'Markdown',
-      ...Markup.inlineKeyboard([
+      Markup.inlineKeyboard([
         [Markup.button.callback('✅ Да', 'confirm')],
         [Markup.button.callback('❌ Отмена', 'cancel')]
       ])
