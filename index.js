@@ -86,7 +86,7 @@ broadcastScene.action('confirm', async (ctx) => {
   let failCount = 0;
   let failedUsers = [];
   const msg = "¡¡¡ ОБЪЯВЛЕНИЕ 📣 !!!\n\n"
-  await ctx.telegram.sendMessage(CHANNEL_ID, msg + messageText, { parse_mode: 'Markdown' })
+  await ctx.telegram.sendMessage(CHANNEL_ID, msg + messageText, { parse_mode: 'HTML' })
   const sendMessages = async (batch) => {
     for (let user of batch) {
       try {
